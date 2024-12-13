@@ -5,7 +5,7 @@ tags:
   - provider/aws
 ---
 
-# Component: `github`
+# Component: `github-runners`
 
 This component is responsible for provisioning EC2 instances for GitHub runners.
 
