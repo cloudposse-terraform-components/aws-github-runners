@@ -29,8 +29,8 @@ runner_plat=linux
 
 function fatal()
 {
-   echo "error: $1" >&2
-   exit 1
+	echo "error: $1" >&2
+	exit 1
 }
 
 if [ -z "${runner_scope}" ]; then fatal "supply scope as argument 1"; fi
@@ -40,7 +40,7 @@ which jq || fatal "jq required.  Please install in PATH with apt-get, brew, etc"
 
 # bail early if there's already a runner there. also sudo early
 if [ -d ./runner ]; then
-    fatal "Runner already exists.  Use a different directory or delete ./runner"
+	fatal "Runner already exists.  Use a different directory or delete ./runner"
 fi
 
 sudo -u ${svc_user} mkdir runner
@@ -68,14 +68,14 @@ latest_version=$(echo ${latest_version_label:1})
 runner_file="actions-runner-${runner_plat}-x64-${latest_version}.tar.gz"
 
 if [ -f "${runner_file}" ]; then
-    echo "${runner_file} exists. skipping download."
+	echo "${runner_file} exists. skipping download."
 else
-    runner_url="https://github.com/actions/runner/releases/download/${latest_version_label}/${runner_file}"
+	runner_url="https://github.com/actions/runner/releases/download/${latest_version_label}/${runner_file}"
 
-    echo "Downloading ${latest_version_label} for ${runner_plat} ..."
-    echo $runner_url
+	echo "Downloading ${latest_version_label} for ${runner_plat} ..."
+	echo $runner_url
 
-    curl -O -L ${runner_url}
+	curl -O -L ${runner_url}
 fi
 
 ls -la *.tar.gz
@@ -98,7 +98,7 @@ pushd ./runner
 #---------------------------------------
 runner_url="https://github.com/${runner_scope}"
 if [ -n "${ghe_hostname}" ]; then
-    runner_url="https://${ghe_hostname}/${runner_scope}"
+	runner_url="https://${ghe_hostname}/${runner_scope}"
 fi
 
 echo
@@ -113,7 +113,7 @@ echo
 echo "Configuring as a service ..."
 prefix=""
 if [ "${runner_plat}" == "linux" ]; then
-    prefix="sudo "
+	prefix="sudo "
 fi
 
 ${prefix}./svc.sh install ${svc_user}

@@ -174,9 +174,9 @@ permissions “mode” for Self-hosted runners to Read-Only. The instructions fo
 #### Workflow Permissions
 
 1. Browse to
-   [https://github.com/organizations/{Org}/settings/actions](https://github.com/organizations/{Org}/settings/actions)
-   (Organization) or
-   [https://github.com/{Org}/{Repo}/settings/actions](https://github.com/{Org}/{Repo}/settings/actions) (Repository)
+  [https://github.com/organizations/{Org}/settings/actions](https://github.com/organizations/{Org}/settings/actions)
+  (Organization) or
+  [https://github.com/{Org}/{Repo}/settings/actions](https://github.com/{Org}/{Repo}/settings/actions) (Repository)
 
 2. Set the default permissions for the GITHUB_TOKEN to Read Only
 
@@ -221,10 +221,10 @@ If you are working with Cloud Posse, upload this Private Key, GitHub App ID, and
 and skip the rest. Otherwise, complete the private key setup in `core-<default-region>-auto`.
 
 1. Convert the private key to a PEM file using the following command:
-   `openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in {DOWNLOADED_FILE_NAME}.pem -out private-key-pkcs8.key`
+  `openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in {DOWNLOADED_FILE_NAME}.pem -out private-key-pkcs8.key`
 1. Upload PEM file key to the specified ssm path: `/github/runners/acme/private-key` in `core-<default-region>-auto`
 1. Create another sensitive SSM parameter `/github/runners/acme/registration-token` in `core-<default-region>-auto` with
-   any basic value, such as "foo". This will be overwritten by the rotator.
+  any basic value, such as "foo". This will be overwritten by the rotator.
 1. Update the GitHub App ID and Installation ID in the `github-action-token-rotator` catalog.
 
 > [!TIP]
@@ -234,21 +234,21 @@ and skip the rest. Otherwise, complete the private key setup in `core-<default-r
 #### (ClickOps) Obtain the Runner Registration Token
 
 1. Browse to
-   [https://github.com/organizations/{Org}/settings/actions/runners](https://github.com/organizations/{Org}/settings/actions/runners)
-   (Organization) or
-   [https://github.com/{Org}/{Repo}/settings/actions/runners](https://github.com/{Org}/{Repo}/settings/actions/runners)
-   (Repository)
+  [https://github.com/organizations/{Org}/settings/actions/runners](https://github.com/organizations/{Org}/settings/actions/runners)
+  (Organization) or
+  [https://github.com/{Org}/{Repo}/settings/actions/runners](https://github.com/{Org}/{Repo}/settings/actions/runners)
+  (Repository)
 
 2. Click the **New Runner** button (Organization) or **New Self Hosted Runner** button (Repository)
 
 3. Copy the Github Runner token from the next screen. Note that this is the only time you will see this token. Note that
-   if you exit the `New {Self Hosted} Runner` screen and then later return by clicking the `New {Self Hosted} Runner`
-   button again, the registration token will be invalidated and a new token will be generated.
+  if you exit the `New {Self Hosted} Runner` screen and then later return by clicking the `New {Self Hosted} Runner`
+  button again, the registration token will be invalidated and a new token will be generated.
 
 <img src="/assets/refarch/cleanshot-2022-03-01-at-16.12.26-20220302-005927.png" height="1010" width="833" /><br/>
 
 4. Add the `REGISTRATION_TOKEN` to the `/github/token` SSM parameter in the account where Github runners are hosted
-   (usually `automation`), encrypted with KMS.
+  (usually `automation`), encrypted with KMS.
 
 ```
 chamber write github token <value>
@@ -266,11 +266,11 @@ If the GitHub Registration Token parameter, `/github/runners/acme/registration-t
 following tips:
 
 1. The private key is stored at the given parameter path:
-   `parameter_store_private_key_path: /github/runners/acme/private-key`
+  `parameter_store_private_key_path: /github/runners/acme/private-key`
 1. The private key is Base 64 encoded. If you pull the key from SSM and decode it, it should begin with
-   `-----BEGIN PRIVATE KEY-----`
+  `-----BEGIN PRIVATE KEY-----`
 1. If the private key has changed, you must _redeploy_ `github-action-token-rotator`. Run a plan against the component
-   to make sure there are not changes required.
+  to make sure there are not changes required.
 
 ## The GitHub Registration Token is valid, but the Runners are not registering with GitHub
 
