@@ -327,14 +327,14 @@ permissions:
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.9.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.9.0, < 6.0.0 |
 | <a name="requirement_cloudinit"></a> [cloudinit](#requirement\_cloudinit) | >= 2.2 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.9.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.9.0, < 6.0.0 |
 | <a name="provider_cloudinit"></a> [cloudinit](#provider\_cloudinit) | >= 2.2 |
 
 ## Modules
