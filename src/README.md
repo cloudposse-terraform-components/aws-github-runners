@@ -16,58 +16,6 @@ This component is responsible for provisioning EC2 instances for GitHub runners.
 
 ## Requirements
 
-## Usage
-
-**Stack Level**: Regional
-
-Here's an example snippet for how to use this component.
-
-```yaml
-components:
-  terraform:
-    github-runners:
-      vars:
-        cpu_utilization_high_threshold_percent: 5
-        cpu_utilization_low_threshold_percent: 1
-        default_cooldown: 300
-        github_scope: company
-        instance_type: "t3.small"
-        max_size: 10
-        min_size: 1
-        runner_group: default
-        scale_down_cooldown_seconds: 2700
-        wait_for_capacity_timeout: 10m
-        mixed_instances_policy:
-          instances_distribution:
-            on_demand_allocation_strategy: "prioritized"
-            on_demand_base_capacity: 1
-            on_demand_percentage_above_base_capacity: 0
-            spot_allocation_strategy: "capacity-optimized"
-            spot_instance_pools: null
-            spot_max_price: null
-          override:
-            - instance_type: "t4g.large"
-              weighted_capacity: null
-            - instance_type: "m5.large"
-              weighted_capacity: null
-            - instance_type: "m5a.large"
-              weighted_capacity: null
-            - instance_type: "m5n.large"
-              weighted_capacity: null
-            - instance_type: "m5zn.large"
-              weighted_capacity: null
-            - instance_type: "m4.large"
-              weighted_capacity: null
-            - instance_type: "c5.large"
-              weighted_capacity: null
-            - instance_type: "c5a.large"
-              weighted_capacity: null
-            - instance_type: "c5n.large"
-              weighted_capacity: null
-            - instance_type: "c4.large"
-              weighted_capacity: null
-```
-
 ## Configuration
 
 ### API Token
@@ -301,7 +249,140 @@ permissions:
 ```
 
 <!-- prettier-ignore-start -->
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- prettier-ignore-end -->
+
+## FAQ
+
+### Can we scope it to a github org with both private and public repos ?
+
+Yes but this requires Github Enterprise Cloud and the usage of runner groups to scope permissions of runners to specific
+repos. If you set the scope to the entire org without runner groups and if the org has both public and private repos,
+then the risk of using a self-hosted runner incorrectly is a vulnerability within public repos.
+
+[https://docs.github.com/en/actions/hosting-your-own-runners/managing-access-to-self-hosted-runners-using-groups](https://docs.github.com/en/actions/hosting-your-own-runners/managing-access-to-self-hosted-runners-using-groups)
+
+If you do not have github enterprise cloud and runner groups cannot be utilized, then it’s best to create new github
+runners per repo or use the summerwind action-runners-controller via a Github App to set the scope to specific repos.
+
+### How can we see the current spot pricing?
+
+Go to [ec2instances.info](http://ec2instances.info/)
+
+### If we don’t use mixed at all does that mean we can’t do spot?
+
+It’s possible to do spot without using mixed instances but you leave yourself open to zero instance availability with a
+single instance type.
+
+For example, if you wanted to use spot and use `t3.xlarge` in `us-east-2` and for some reason, AWS ran out of
+`t3.xlarge`, you wouldn't have the option to choose another instance type and so all the GitHub Action runs would stall
+until availability returned. If you use on-demand pricing, it’s more expensive, but you’re more likely to get scheduling
+priority. For guaranteed availability, reserved instances are required.
+
+### Do the overrides apply to both the on-demand and the spot instances, or only the spot instances?
+
+Since the overrides affect the launch template, I believe they will affect both spot instances and override since
+weighted capacity can be set for either or. The override terraform option is on the ASG’s `launch_template`
+
+> List of nested arguments provides the ability to specify multiple instance types. This will override the same
+> parameter in the launch template. For on-demand instances, Auto Scaling considers the order of preference of instance
+> types to launch based on the order specified in the overrides list. Defined below. And in the terraform resource for
+> `instances_distribution`
+
+> `spot_max_price` - (Optional) Maximum price per unit hour that the user is willing to pay for the Spot instances.
+> Default: an empty string which means the on-demand price. For a `mixed_instances_policy`, this will do purely
+> on-demand
+
+```
+        mixed_instances_policy:
+          instances_distribution:
+            on_demand_allocation_strategy: "prioritized"
+            on_demand_base_capacity: 1
+            on_demand_percentage_above_base_capacity: 0
+            spot_allocation_strategy: "capacity-optimized"
+            spot_instance_pools: null
+            spot_max_price: []
+```
+
+This will always do spot unless instances are unavailable, then switch to on-demand.
+
+```
+        mixed_instances_policy:
+          instances_distribution:
+            # ...
+            spot_max_price: 0.05
+```
+
+If you want a single instance type, you could still use the mixed instances policy to define that like above, or you can
+use these other inputs and comment out the `mixed_instances_policy`
+
+```
+        instance_type: "t3.xlarge"
+        # the below is optional in order to set the spot max price
+        instance_market_options:
+          market_type = "spot"
+          spot_options:
+            block_duration_minutes: 6000
+            instance_interruption_behavior: terminate
+            max_price: 0.05
+            spot_instance_type = persistent
+            valid_until: null
+```
+
+The `overrides` will override the `instance_type` above.
+## Usage
+
+**Stack Level**: Regional
+
+Here's an example snippet for how to use this component.
+
+```yaml
+components:
+  terraform:
+    github-runners:
+      vars:
+        cpu_utilization_high_threshold_percent: 5
+        cpu_utilization_low_threshold_percent: 1
+        default_cooldown: 300
+        github_scope: company
+        instance_type: "t3.small"
+        max_size: 10
+        min_size: 1
+        runner_group: default
+        scale_down_cooldown_seconds: 2700
+        wait_for_capacity_timeout: 10m
+        mixed_instances_policy:
+          instances_distribution:
+            on_demand_allocation_strategy: "prioritized"
+            on_demand_base_capacity: 1
+            on_demand_percentage_above_base_capacity: 0
+            spot_allocation_strategy: "capacity-optimized"
+            spot_instance_pools: null
+            spot_max_price: null
+          override:
+            - instance_type: "t4g.large"
+              weighted_capacity: null
+            - instance_type: "m5.large"
+              weighted_capacity: null
+            - instance_type: "m5a.large"
+              weighted_capacity: null
+            - instance_type: "m5n.large"
+              weighted_capacity: null
+            - instance_type: "m5zn.large"
+              weighted_capacity: null
+            - instance_type: "m4.large"
+              weighted_capacity: null
+            - instance_type: "c5.large"
+              weighted_capacity: null
+            - instance_type: "c5a.large"
+              weighted_capacity: null
+            - instance_type: "c5n.large"
+              weighted_capacity: null
+            - instance_type: "c4.large"
+              weighted_capacity: null
+```
+
+
+<!-- markdownlint-disable -->
 ## Requirements
 
 | Name | Version |
@@ -409,96 +490,25 @@ permissions:
 | <a name="output_eventbridge_target_arn"></a> [eventbridge\_target\_arn](#output\_eventbridge\_target\_arn) | The ARN of the Eventbridge target corresponding to the Eventbridge rule for the EC2 lifecycle transition. |
 | <a name="output_iam_role_arn"></a> [iam\_role\_arn](#output\_iam\_role\_arn) | The ARN of the IAM role associated with the Autoscaling Group |
 | <a name="output_ssm_document_arn"></a> [ssm\_document\_arn](#output\_ssm\_document\_arn) | The ARN of the SSM document. |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
-<!-- prettier-ignore-end -->
+<!-- markdownlint-restore -->
 
-## FAQ
 
-### Can we scope it to a github org with both private and public repos ?
-
-Yes but this requires Github Enterprise Cloud and the usage of runner groups to scope permissions of runners to specific
-repos. If you set the scope to the entire org without runner groups and if the org has both public and private repos,
-then the risk of using a self-hosted runner incorrectly is a vulnerability within public repos.
-
-[https://docs.github.com/en/actions/hosting-your-own-runners/managing-access-to-self-hosted-runners-using-groups](https://docs.github.com/en/actions/hosting-your-own-runners/managing-access-to-self-hosted-runners-using-groups)
-
-If you do not have github enterprise cloud and runner groups cannot be utilized, then it’s best to create new github
-runners per repo or use the summerwind action-runners-controller via a Github App to set the scope to specific repos.
-
-### How can we see the current spot pricing?
-
-Go to [ec2instances.info](http://ec2instances.info/)
-
-### If we don’t use mixed at all does that mean we can’t do spot?
-
-It’s possible to do spot without using mixed instances but you leave yourself open to zero instance availability with a
-single instance type.
-
-For example, if you wanted to use spot and use `t3.xlarge` in `us-east-2` and for some reason, AWS ran out of
-`t3.xlarge`, you wouldn't have the option to choose another instance type and so all the GitHub Action runs would stall
-until availability returned. If you use on-demand pricing, it’s more expensive, but you’re more likely to get scheduling
-priority. For guaranteed availability, reserved instances are required.
-
-### Do the overrides apply to both the on-demand and the spot instances, or only the spot instances?
-
-Since the overrides affect the launch template, I believe they will affect both spot instances and override since
-weighted capacity can be set for either or. The override terraform option is on the ASG’s `launch_template`
-
-> List of nested arguments provides the ability to specify multiple instance types. This will override the same
-> parameter in the launch template. For on-demand instances, Auto Scaling considers the order of preference of instance
-> types to launch based on the order specified in the overrides list. Defined below. And in the terraform resource for
-> `instances_distribution`
-
-> `spot_max_price` - (Optional) Maximum price per unit hour that the user is willing to pay for the Spot instances.
-> Default: an empty string which means the on-demand price. For a `mixed_instances_policy`, this will do purely
-> on-demand
-
-```
-        mixed_instances_policy:
-          instances_distribution:
-            on_demand_allocation_strategy: "prioritized"
-            on_demand_base_capacity: 1
-            on_demand_percentage_above_base_capacity: 0
-            spot_allocation_strategy: "capacity-optimized"
-            spot_instance_pools: null
-            spot_max_price: []
-```
-
-This will always do spot unless instances are unavailable, then switch to on-demand.
-
-```
-        mixed_instances_policy:
-          instances_distribution:
-            # ...
-            spot_max_price: 0.05
-```
-
-If you want a single instance type, you could still use the mixed instances policy to define that like above, or you can
-use these other inputs and comment out the `mixed_instances_policy`
-
-```
-        instance_type: "t3.xlarge"
-        # the below is optional in order to set the spot max price
-        instance_market_options:
-          market_type = "spot"
-          spot_options:
-            block_duration_minutes: 6000
-            instance_interruption_behavior: terminate
-            max_price: 0.05
-            spot_instance_type = persistent
-            valid_until: null
-```
-
-The `overrides` will override the `instance_type` above.
 
 ## References
 
-- [cloudposse/terraform-aws-components](https://github.com/cloudposse/terraform-aws-components/tree/main/modules/github-runners) -
-  Cloud Posse's upstream component
-- [AWS: Auto Scaling groups with multiple instance types and purchase options](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-mixed-instances-groups.html)
-- [InstancesDistribution](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_InstancesDistribution.html)
 
-* [MixedInstancesPolicy](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_MixedInstancesPolicy.html)
-* [Terraform ASG `Override` Attribute](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group#override)
+- [cloudposse-terraform-components](https://github.com/orgs/cloudposse-terraform-components/repositories) - Cloud Posse's upstream component
+
+- [AWS: Auto Scaling groups with multiple instance types and purchase options](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-mixed-instances-groups.html) - 
+
+- [InstancesDistribution](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_InstancesDistribution.html) - 
+
+- [MixedInstancesPolicy](https://docs.aws.amazon.com/autoscaling/ec2/APIReference/API_MixedInstancesPolicy.html) - 
+
+- [Terraform ASG Override Attribute](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group#override) - 
+
+
+
 
 [<img src="https://cloudposse.com/logo-300x69.svg" height="32" align="right"/>](https://cpco.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-terraform-components/aws-github-runners&utm_content=)
+
