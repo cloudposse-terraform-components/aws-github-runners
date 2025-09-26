@@ -107,7 +107,7 @@ module "sg" {
 
 module "autoscale_group" {
   source  = "cloudposse/ec2-autoscale-group/aws"
-  version = "0.41.1"
+  version = "0.42.0"
 
   image_id                    = join("", data.aws_ami.runner.*.id)
   instance_type               = var.instance_type
