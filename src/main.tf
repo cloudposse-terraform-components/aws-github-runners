@@ -20,7 +20,7 @@ locals {
       encoding    = "b64"
       content = base64encode(templatefile(local.deregister_runner_script_template, {
         github_scope          = var.github_scope,
-        github_token_ssm_path = join("", data.aws_ssm_parameter.github_token.*.name),
+        github_token_ssm_path = join("", data.aws_ssm_parameter.github_token[*].name),
         runner_version        = var.runner_version
       }))
     },
@@ -67,7 +67,7 @@ data "cloudinit_config" "config" {
     filename     = "user-data.sh"
     content = templatefile(local.userdata_template, {
       docker_compose_version = var.docker_compose_version
-      github_token_ssm_path  = join("", data.aws_ssm_parameter.github_token.*.name)
+      github_token_ssm_path  = join("", data.aws_ssm_parameter.github_token[*].name)
       github_scope           = var.github_scope
       labels                 = join(",", var.runner_labels)
       pre_install            = var.userdata_pre_install
@@ -109,7 +109,7 @@ module "autoscale_group" {
   source  = "cloudposse/ec2-autoscale-group/aws"
   version = "0.43.1"
 
-  image_id                    = join("", data.aws_ami.runner.*.id)
+  image_id                    = join("", data.aws_ami.runner[*].id)
   instance_type               = var.instance_type
   mixed_instances_policy      = var.mixed_instances_policy
   subnet_ids                  = local.vpc_private_subnet_ids
@@ -119,10 +119,10 @@ module "autoscale_group" {
   default_cooldown            = var.default_cooldown
   scale_down_cooldown_seconds = var.scale_down_cooldown_seconds
   wait_for_capacity_timeout   = var.wait_for_capacity_timeout
-  user_data_base64            = join("", data.cloudinit_config.config.*.rendered)
+  user_data_base64            = join("", data.cloudinit_config.config[*].rendered)
   tags                        = module.this.tags
   security_group_ids          = [module.sg.id]
-  iam_instance_profile_name   = join("", aws_iam_instance_profile.github_action_runner.*.name)
+  iam_instance_profile_name   = join("", aws_iam_instance_profile.github_action_runner[*].name)
   block_device_mappings       = var.block_device_mappings
   associate_public_ip_address = false
   max_instance_lifetime       = var.max_instance_lifetime
